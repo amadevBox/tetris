@@ -12,21 +12,30 @@ const zType = [
 ]
 
 const iType = [
-  [0, 1, 0, 0],
-  [0, 1, 0, 0],
-  [0, 1, 0, 0],
-  [0, 1, 0, 0],
+  [0, 2, 0, 0],
+  [0, 2, 0, 0],
+  [0, 2, 0, 0],
+  [0, 2, 0, 0],
 ]
 
 const lType = [
-  [1, 0, 0],
-  [1, 0, 0],
-  [1, 1, 0],
+  [3, 0, 0],
+  [3, 0, 0],
+  [3, 3, 0],
 ]
+
+const oType = [
+  [4, 4],
+  [4, 4],
+]
+
+const blockColors = ['red', 'green', 'blue', 'pink']
 
 const blockTypes = {
   zType,
   iType,
+  lType,
+  oType,
 }
 
 class Block {
@@ -50,13 +59,13 @@ class Block {
   moveBlockByEvent(e) {
     switch(e.key) {
       case 'ArrowLeft': {
-        if (this.position.x > 0) {
+        if (/*this.position.x > 0*/true) {
           this.position.x--
         }
         break
       }
       case 'ArrowRight': {
-        if (this.position.x < columns) {
+        if (/*this.position.x < columns*/ true) {
           this.position.x++
         }
         break
@@ -80,16 +89,17 @@ class Block {
     const { x, y } = this.position
     this.cells.forEach((rows, i) => {
       rows.forEach((cell, j) => {
-        if (cell && y + i + 1 >= field.length) {
+        if (cell && y + i >= field.length) {
           this.isAlive = false
+          console.log('this.isAlive1', this.isAlive)
           return
         }
-        if (cell && field[y + i + 1][x + j]) {
+        if (cell && field[y + i][x + j]) {
           this.isAlive = false
+          console.log('this.isAlive2', this.isAlive)
         }
       })
     })
-
   }
 }
 
@@ -113,7 +123,7 @@ const generateField = () => {
 const drawField = (field, ctx) => {
   field.forEach((row, rowIndex) => {
     row.forEach((cell, columnIndex) => {
-      ctx.fillStyle = cell ? 'red' : '#000'
+      ctx.fillStyle = cell ? blockColors[cell - 1] : '#000'
       ctx.strokeStyle = "#00f"
       ctx.lineWidth = borderSize
 
@@ -136,6 +146,7 @@ const fps = 24
 const timeToMoveDown = 500
 let counterOfF = 0
 let prevPosition = { x: 0, y: 0 }
+let prevBlock = [[0,0,0], [0,0,0], [0,0,0]]
 const render = (game, block, time) => {
   if (!block) {
     const arrOfTypes = Object.values(blockTypes)
@@ -150,26 +161,30 @@ const render = (game, block, time) => {
     counterOfF++
     if (counterOfF === (fps * timeToMoveDown) / 1000) {
       counterOfF = 0
-      if (block.isAlive) {
-        const canSliceBottom = block.cells[block.cells.length - 1].every((cell) => !cell)
-        if (canSliceBottom) {
-          block.cells.unshift(block.cells.pop())
-        } else {
-          position.y++
-        }
+      if (block && block.isAlive) {
+        position.y++
+      } else {
+        block = null
       }
     }
 
     prevTime = time
 
-    if (block.isAlive) {
-      insertIntoArray(block.cells, field, prevPosition.y, prevPosition.x, true)
+    if (block) {
+      insertIntoArray(prevBlock, field, prevPosition.y, prevPosition.x, true)
       block.findCollison(field)
-      insertIntoArray(block.cells, field, position.y, position.x)
-      drawField(field, ctx)
-      prevPosition = Object.assign({}, position)
-    } else {
-      block = null
+      if (block.isAlive) {
+        insertIntoArray(block.cells, field, position.y, position.x)
+        drawField(field, ctx)
+        prevPosition = Object.assign({}, position)
+        prevBlock = [].concat(block.cells)
+      } else {
+        insertIntoArray(block.cells, field, prevPosition.y, prevPosition.x)
+        const f = findFilledRow(field)
+        drawField(f, ctx)
+        prevPosition = Object.assign({}, {x: 0, y: 0})
+        block = null
+      }
     }
   }
 
@@ -183,24 +198,25 @@ const insertIntoArray = (childArr, parrentArr, row, col, clearMode) => {
   const childHeight = childArr.length
   const childWidth = childArr[0].length
 
-  // if (
-  //   (col + childWidth > parrentWidth) ||
-  //   (row + childHeight > parrentHeight)
-  // ) return
-
   let i = 0
   while(i < childHeight) {
     let j = 0
     while(j < childWidth) {
-      parrentArr[row + i][col + j] = !clearMode ? childArr[i][j] : 0
+      parrentArr[row + i][col + j] = !clearMode
+        ? childArr[i][j]
+         ? childArr[i][j]
+         : parrentArr[row + i][col + j]
+        : childArr[i][j]
+          ? 0
+          : parrentArr[row + i][col + j]
       j++
     }
     i++
   }
 }
 
-const canMove = (childArr, parrentArr, row, col) => {
-
+const findFilledRow = (field) => {
+  return field.filter((row) => !row.every((cell) => cell))
 }
 
 window.onload = () => {
