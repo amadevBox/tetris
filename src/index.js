@@ -71,7 +71,7 @@ class Block {
         break
       }
       case 'ArrowDown': {
-        if (/*this.position.x < columns*/true) {
+        if (this.position.y + this.cells.length < 20) {
           this.position.y++
         }
         break
@@ -89,7 +89,7 @@ class Block {
     const { x, y } = this.position
     this.cells.forEach((rows, i) => {
       rows.forEach((cell, j) => {
-        if (cell && y + i >= field.length) {
+        if (cell && y + i >= 20) {
           this.isAlive = false
           console.log('this.isAlive1', this.isAlive)
           return
@@ -111,14 +111,6 @@ const changeScore = (score) => {
 }
 
 const finishGame = (game) => {}
-
-const generateField = () => {
-  const amountOfRows = mapHeight / cellSize
-  const cellsInRow = mapWidth / cellSize
-  const field = Array.from({length: amountOfRows},
-    () => Array.from({length: cellsInRow}, () => 0))
-  return field
-}
 
 const drawField = (field, ctx) => {
   field.forEach((row, rowIndex) => {
@@ -157,6 +149,10 @@ const render = (game, block, time) => {
   const { ctx, field } = game
   const { position } = block
 
+  // if (position.y > prevPosition.y) {
+  //   // position.y = prevPosition.y + 1
+  // }
+
   if (time - prevTime > 1000 / fps) {
     counterOfF++
     if (counterOfF === (fps * timeToMoveDown) / 1000) {
@@ -174,14 +170,16 @@ const render = (game, block, time) => {
       insertIntoArray(prevBlock, field, prevPosition.y, prevPosition.x, true)
       block.findCollison(field)
       if (block.isAlive) {
+        // console.log('isAlive', prevPosition.y, position.y)
         insertIntoArray(block.cells, field, position.y, position.x)
         drawField(field, ctx)
         prevPosition = Object.assign({}, position)
         prevBlock = [].concat(block.cells)
       } else {
         insertIntoArray(block.cells, field, prevPosition.y, prevPosition.x)
-        const f = findFilledRow(field)
-        drawField(f, ctx)
+        game.field = findFilledRow(field)
+        console.log('game.field', game.field)
+        drawField(game.field, ctx)
         prevPosition = Object.assign({}, {x: 0, y: 0})
         block = null
       }
@@ -216,7 +214,16 @@ const insertIntoArray = (childArr, parrentArr, row, col, clearMode) => {
 }
 
 const findFilledRow = (field) => {
-  return field.filter((row) => !row.every((cell) => cell))
+  const filteredField = field.filter((row) => row.some((cell) => (cell === 0)))
+  const diff = field.length - filteredField.length
+  const filledArr = generateField(diff, 10)
+  return [...filledArr, ...filteredField]
+}
+
+const generateField = (rows, cols) => {
+  const field = Array.from({length: rows},
+    () => Array.from({length: cols}, () => 0))
+  return field
 }
 
 window.onload = () => {
@@ -224,6 +231,8 @@ window.onload = () => {
   const ctx = canvas.getContext('2d')
   const game = { ctx }
 
-  game.field = generateField()
+  const amountOfRows = (mapHeight / cellSize) + 4
+  const cellsInRow = mapWidth / cellSize
+  game.field = generateField(amountOfRows, cellsInRow)
   render(game)
 }
