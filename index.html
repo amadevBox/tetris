@@ -7,26 +7,24 @@
   <body>
     <script src="lib/index.js"></script>
     <style media="screen">
+      body {
+        background-color: steelblue;
+      }
       #map {
         display: block;
-        margin: 0 auto;
-      }
-      .wrapper {
-        position: relative;
-        width: 500px;
-        height: 500px;
-        margin: 0 auto;
+        margin: 10px auto 0 auto;
+        border: 1px solid white;
       }
       #score {
-        position: absolute;
-        right: 0;
-        top: 0;
-        margin: 10px;
+        margin: 20px auto;
+        text-align: center;
         font: 35px Comic Sans MS;
+        color: white;
       }
     </style>
-    <div class="wrapper">
-      <canvas id="map" width="200" height="400"></canvas>
+    <div>
+      <div id="score">0</div>
+      <canvas id="map" width="300" height="600"></canvas>
     </div>
   </body>
 </html>

@@ -1,9 +1,9 @@
-const mapWidth = 200
-const mapHeight = 400
-const rows = 20
-const columns = 10
-const cellSize = mapWidth / columns
-const borderSize = 0.5
+const mapWidth = 300
+const mapHeight = 600
+const numberOfRows = 20
+const numberOfCols = 10
+const cellSize = mapWidth / numberOfCols
+const borderSize = 0.2
 
 const zType = [
   [1, 1, 0],
@@ -11,31 +11,60 @@ const zType = [
   [0, 0, 0],
 ]
 
+const sType = [
+  [0, 2, 2],
+  [2, 2, 0],
+  [0, 0, 0],
+]
+
 const iType = [
-  [0, 2, 0, 0],
-  [0, 2, 0, 0],
-  [0, 2, 0, 0],
-  [0, 2, 0, 0],
+  [0, 3, 0, 0],
+  [0, 3, 0, 0],
+  [0, 3, 0, 0],
+  [0, 3, 0, 0],
 ]
 
 const lType = [
-  [3, 0, 0],
-  [3, 0, 0],
-  [3, 3, 0],
+  [4, 0, 0],
+  [4, 0, 0],
+  [4, 4, 0],
+]
+
+const jType = [
+  [0, 0, 5],
+  [0, 0, 5],
+  [0, 5, 5],
 ]
 
 const oType = [
-  [4, 4],
-  [4, 4],
+  [6, 6],
+  [6, 6],
 ]
 
-const blockColors = ['red', 'green', 'blue', 'pink']
+const tType = [
+  [0, 7, 0],
+  [7, 7, 7],
+  [0, 0, 0],
+]
+
+const blockColors = [
+  'limegreen',
+  'darkorange',
+  'mediumorchid',
+  'dodgerblue',
+  'orangered',
+  'cornflowerblue',
+  'tomato',
+]
 
 const blockTypes = {
   zType,
+  sType,
   iType,
   lType,
+  jType,
   oType,
+  tType,
 }
 
 class Block {
@@ -59,27 +88,21 @@ class Block {
   moveBlockByEvent(e) {
     switch(e.key) {
       case 'ArrowLeft': {
-        if (/*this.position.x > 0*/true) {
-          this.position.x--
-        }
+        this.position.x--
         break
       }
       case 'ArrowRight': {
-        if (/*this.position.x < columns*/ true) {
-          this.position.x++
-        }
+        this.position.x++
         break
       }
       case 'ArrowDown': {
-        if (this.position.y + this.cells.length < 20) {
+        if (this.position.y + this.cells.length < numberOfRows) {
           this.position.y++
         }
         break
       }
       case 'ArrowUp': {
-        if (/*this.position.x < columns*/true) {
-          this.rotate()
-        }
+        this.rotate()
         break
       }
     }
@@ -89,11 +112,7 @@ class Block {
     const { x, y } = this.position
     this.cells.forEach((rows, i) => {
       rows.forEach((cell, j) => {
-        if (cell && y + i >= 20) {
-          this.isAlive = false
-          return
-        }
-        if (cell && field[y + i][x + j]) {
+        if (cell && ((y + i >= numberOfRows) || field[y + i][x + j])) {
           this.isAlive = false
           return
         }
@@ -110,35 +129,29 @@ const canMoveLeft = (block, field) => {
     return rows.some((cell, j) => {
       if (
         (cell && x + j < 0) ||
-        (cell && x + j >= 10) ||
+        (cell && x + j >= numberOfCols) ||
         (cell && field[y + i][x + j])
-      ) {
-        return true
-      }
+      ) return true
     })
   })
   return true
 }
 
-const changeScore = (score) => {
+const updateScore = (score) => {
   const scoreElem = document.getElementById('score')
-  scoreElem.innerHTML = `length: ${score}`
+  scoreElem.innerHTML = score
 }
-
-const finishGame = (game) => {}
 
 const drawField = (field, ctx) => {
   field.forEach((row, rowIndex) => {
     row.forEach((cell, columnIndex) => {
-      ctx.fillStyle = cell ? blockColors[cell - 1] : '#000'
-      ctx.strokeStyle = "#00f"
+      ctx.fillStyle = cell ? blockColors[cell - 1] : 'lightblue'
+      ctx.strokeStyle = '#555'
       ctx.lineWidth = borderSize
 
       const args = [
-        columnIndex * cellSize,
-        rowIndex * cellSize,
-        cellSize,
-        cellSize,
+        columnIndex * cellSize, rowIndex * cellSize,
+        cellSize, cellSize,
       ]
 
       ctx.fillRect(...args)
@@ -148,26 +161,27 @@ const drawField = (field, ctx) => {
 }
 
 const { requestAnimationFrame } = window
-let prevTime = 0
 const fps = 24
 const timeToMoveDown = 500
+
 let counterOfF = 0
+let prevTime = 0
 let prevPosition = { x: 0, y: 0 }
-let prevBlock = [[0,0,0], [0,0,0], [0,0,0]]
+let prevBlockCells = [[]]
+
 const render = (game, block, time) => {
   if (!block) {
     const arrOfTypes = Object.values(blockTypes)
-    block = new Block(arrOfTypes[arrOfTypes.length * Math.random() | 0], 0, 0)
+    const blockType = arrOfTypes[arrOfTypes.length * Math.random() | 0]
+    const x = ((numberOfCols - blockType.length) / 2) | 0
+    block = new Block(blockType, x, 0)
+    prevPosition = { x, y: 0 }
+    console.log('block', block)
     addEventListener('keydown', (e) => block.moveBlockByEvent.bind(block)(e))
   }
 
   const { ctx, field } = game
   const { position } = block
-  // console.log('current_position', position)
-
-  // if (position.y > prevPosition.y) {
-  //   // position.y = prevPosition.y + 1
-  // }
 
   if (time - prevTime > 1000 / fps) {
     counterOfF++
@@ -182,32 +196,37 @@ const render = (game, block, time) => {
 
     prevTime = time
 
-    insertIntoArray(prevBlock, field, prevPosition.y, prevPosition.x, true)
+    insertIntoArray(prevBlockCells, field, prevPosition.y, prevPosition.x, true)
 
     const canMove = canMoveLeft(block, field)
     if (!canMove) {
       position.x = prevPosition.x
-      block.cells = prevBlock
+      block.cells = prevBlockCells
     }
 
     if (position.y > prevPosition.y) {
       position.y = prevPosition.y + 1
     }
 
-    console.log('current', position.x, position.y)
     block.findCollison(field)
     if (block.isAlive) {
-      // console.log('isAlive', prevPosition.y, position.y)
       insertIntoArray(block.cells, field, position.y, position.x)
       drawField(field, ctx)
       prevPosition = Object.assign({}, position)
-      prevBlock = [].concat(block.cells)
-    } else {
-      // console.log('prevPosition', prevPosition)
+      prevBlockCells = [].concat(block.cells)
+    } else if (prevPosition.y > block.cells.length - 1) {
       insertIntoArray(block.cells, field, prevPosition.y, prevPosition.x)
       game.field = findFilledRow(field)
       drawField(game.field, ctx)
-      prevPosition = Object.assign({}, {x: 0, y: 0})
+      block = null
+    } else {
+      insertIntoArray(prevBlockCells, field, prevPosition.y, prevPosition.x)
+      const lastBlock = block.cells.filter((row) => !row.every((cell) => !cell)).slice(-prevPosition.y)
+      insertIntoArray(lastBlock, field, 0, position.x)
+      drawField(game.field, ctx)
+      setTimeout(() => { alert('Game Over') }, 0)
+      game.field = generateField(numberOfRows + 4, numberOfCols)
+      updateScore(0)
       block = null
     }
   }
@@ -216,16 +235,10 @@ const render = (game, block, time) => {
 }
 
 const insertIntoArray = (childArr, parrentArr, row, col, clearMode) => {
-  const parrentHeight = parrentArr.length
-  const parrentWidth = parrentArr[0].length
-
-  const childHeight = childArr.length
-  const childWidth = childArr[0].length
-
   let i = 0
-  while(i < childHeight) {
+  while(i < childArr.length) {
     let j = 0
-    while(j < childWidth) {
+    while(j < childArr[i].length) {
       parrentArr[row + i][col + j] = !clearMode
         ? childArr[i][j]
          ? childArr[i][j]
@@ -239,10 +252,13 @@ const insertIntoArray = (childArr, parrentArr, row, col, clearMode) => {
   }
 }
 
+let score = 0
 const findFilledRow = (field) => {
   const filteredField = field.filter((row) => row.some((cell) => (cell === 0)))
   const diff = field.length - filteredField.length
-  const filledArr = generateField(diff, 10)
+  score += diff * 100
+  updateScore(score)
+  const filledArr = generateField(diff, numberOfCols)
   return [...filledArr, ...filteredField]
 }
 
@@ -255,10 +271,9 @@ const generateField = (rows, cols) => {
 window.onload = () => {
   const canvas = document.getElementById('map')
   const ctx = canvas.getContext('2d')
-  const game = { ctx }
-
-  const amountOfRows = (mapHeight / cellSize) + 4
-  const cellsInRow = mapWidth / cellSize
-  game.field = generateField(amountOfRows, cellsInRow)
+  const game = {
+    ctx,
+    field: generateField(numberOfRows + 4, numberOfCols),
+  }
   render(game)
 }
